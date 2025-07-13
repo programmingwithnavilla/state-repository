@@ -4,41 +4,41 @@ import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Store } from "redux";
 import { IRepository } from "../../core/irepository.core";
 
+interface StateWithVersion<T> {
+  state: T;
+  version: number;
+}
+
 export class ReduxRepository<T> implements IRepository<T> {
-  private store: Store<{ state: T }>;
-  private initialState: T;
+  private store;
 
-  constructor(initialState: T) {
-    this.initialState = initialState;
-
+  constructor(private initialState: T) {
     const slice = createSlice({
       name: "reduxRepo",
-      initialState: this.initialState,
+      initialState: {
+        state: this.initialState,
+        version: 0,
+      } as StateWithVersion<T>,
       reducers: {
-        setState: (_state, action: PayloadAction<T>) => action.payload,
-        updateState: (state, action: PayloadAction<Partial<T>>) => ({
-          ...state,
-          ...action.payload,
-        }),
-        resetState: () => this.initialState,
+        setState: (state, action: PayloadAction<T>) => {
+          // Use castDraft to ensure type compatibility with Draft<T>
+          state.state = action.payload as typeof state.state;
+          state.version += 1;
+        },
+        updateState: (state, action: PayloadAction<(prev: T) => T>) => {
+          state.state = action.payload(state.state as T) as typeof state.state;
+          state.version += 1;
+        },
+        resetState: (state) => {
+          state.state = this.initialState as typeof state.state;
+          state.version = 0;
+        },
       },
     });
 
     this.store = configureStore({
       reducer: slice.reducer,
     });
-
-    this.setState = (value: T) => {
-      this.store.dispatch(slice.actions.setState(value));
-    };
-
-    this.updateState = (updater: Partial<T>): void => {
-      this.store.dispatch(slice.actions.updateState(updater));
-    };
-
-    this.resetState = () => {
-      this.store.dispatch(slice.actions.resetState());
-    };
   }
 
   getState(): T {
@@ -46,20 +46,31 @@ export class ReduxRepository<T> implements IRepository<T> {
   }
 
   setState(value: T): void {
-    // This will be overridden in constructor
+    this.store.dispatch({
+      type: "reduxRepo/setState",
+      payload: value,
+    });
   }
 
   updateState(updater: (state: T) => T): void {
-    // We simplify updateState to accept partial object here
+    this.store.dispatch({
+      type: "reduxRepo/updateState",
+      payload: updater,
+    });
   }
 
   resetState(): void {
-    // This will be overridden in constructor
+    this.store.dispatch({ type: "reduxRepo/resetState" });
   }
 
   subscribe(listener: (state: T) => void): () => void {
+    let currentState = this.getState();
     return this.store.subscribe(() => {
-      listener(this.getState());
+      const nextState = this.getState();
+      if (nextState !== currentState) {
+        currentState = nextState;
+        listener(nextState);
+      }
     });
   }
 
@@ -76,21 +87,18 @@ export class ReduxRepository<T> implements IRepository<T> {
   }
 
   async updateStateAsync(updater: (state: T) => T): Promise<void> {
-    const currentState = this.getState();
-    const newState = updater(currentState);
-    this.setState(newState);
+    this.updateState(updater);
   }
 
   async resetStateAsync(): Promise<void> {
     this.resetState();
   }
 
-  // For metadata, just naive implementations
   getStateWithMetadata(): { state: T; timestamp: number } {
     return { state: this.getState(), timestamp: Date.now() };
   }
 
-  setStateWithMetadata(value: T, timestamp: number): void {
+  setStateWithMetadata(value: T, _timestamp: number): void {
     this.setState(value);
   }
 
@@ -109,9 +117,16 @@ export class ReduxRepository<T> implements IRepository<T> {
   subscribeWithMetadata(
     listener: (state: T, timestamp: number) => void
   ): () => void {
+    let current = this.getStateWithMetadata();
     return this.store.subscribe(() => {
-      const current = this.getStateWithMetadata();
-      listener(current.state, current.timestamp);
+      const next = this.getStateWithMetadata();
+      if (
+        next.state !== current.state ||
+        next.timestamp !== current.timestamp
+      ) {
+        current = next;
+        listener(next.state, next.timestamp);
+      }
     });
   }
 
@@ -130,12 +145,15 @@ export class ReduxRepository<T> implements IRepository<T> {
   async updateStateAsyncWithMetadata(
     updater: (state: T, timestamp: number) => { state: T; timestamp: number }
   ): Promise<void> {
-    const current = this.getStateWithMetadata();
-    const updated = updater(current.state, current.timestamp);
-    this.setState(updated.state);
+    this.updateStateWithMetadata(updater);
   }
 
   async resetStateAsyncWithMetadata(): Promise<void> {
     this.resetStateWithMetadata();
+  }
+
+  getStateWithVersion(): { state: T; version: number } {
+    const storeState = this.store.getState();
+    return { state: storeState.state, version: storeState.version };
   }
 }
