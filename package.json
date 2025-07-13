@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+   "dev": "tsup src/index.ts --watch",
+   "build": "tsup src/index.ts --dts --format esm,cjs",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "lint:check": "eslint . --ext .ts,.tsx"
   },
   "repository": {
     "type": "git",
