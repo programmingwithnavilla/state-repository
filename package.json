@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+   "dev": "tsup src/index.ts --watch",
+   "build": "tsup src/index.ts --dts --format esm,cjs",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "lint:check": "eslint . --ext .ts,.tsx"
   },
   "repository": {
     "type": "git",
@@ -16,5 +21,11 @@
   "bugs": {
     "url": "https://github.com/programmingwithnavilla/state-repository/issues"
   },
-  "homepage": "https://github.com/programmingwithnavilla/state-repository#readme"
+  "homepage": "https://github.com/programmingwithnavilla/state-repository#readme",
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
 }
