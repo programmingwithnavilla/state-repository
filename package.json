@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-   "dev": "tsup src/index.ts --watch",
-   "build": "tsup src/index.ts --dts --format esm,cjs",
+    "dev": "tsup src/index.ts --watch",
+    "build": "tsup src/index.ts --dts --format esm,cjs",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "lint": "eslint . --ext .ts,.tsx --fix",
@@ -27,5 +27,8 @@
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2"
   }
 }
