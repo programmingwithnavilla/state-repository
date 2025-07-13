@@ -16,5 +16,11 @@
   "bugs": {
     "url": "https://github.com/programmingwithnavilla/state-repository/issues"
   },
-  "homepage": "https://github.com/programmingwithnavilla/state-repository#readme"
+  "homepage": "https://github.com/programmingwithnavilla/state-repository#readme",
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
 }
